@@ -1,0 +1,69 @@
+---
+title: "Practical Machine Learning Project"
+output:
+  html_document:
+    df_print: paged
+---
+
+Load Data. Remove empty rows. Describe Data.
+```{r}
+
+training_dat = read.csv("C:/Users/Pulin CTR Jhaveri/Downloads/pml-training.csv", na.strings=c("NA","","#DIV/0!"))
+training_dat = training_dat[,colSums(is.na(training_dat))==0]  
+
+testing_dat = read.csv("C:/Users/Pulin CTR Jhaveri/Downloads/pml-testing.csv", na.strings=c("NA","","#DIV/0!"))
+testing_dat = testing_dat[,colSums(is.na(testing_dat))==0]  
+
+head(training_dat)
+str(training_dat)
+dim(training_dat)
+
+
+```
+
+
+For Cross Validation: We will sub-divide training into 2 subsets. subtrain and validation
+```{r}
+
+library(caret)
+
+subtrainList<-createDataPartition(training_dat$classe, p = 0.6, list = FALSE)
+subtrain<-training_dat[subtrainList,]
+validation<-training_dat[-subtrainList,]
+head(subtrain)
+preObj <- preProcess(subtrain, method=c("center","scale"))
+
+```
+
+preprocessing and train the model
+```{r}
+colnames(subtrain)
+modFit <- train(classe ~ ., data = subtrain, method = "rf",preProcess=c("center","scale"))
+print(modFit)
+
+
+```
+
+Predict on the validation Set
+```{r}
+validation_predict<-predict(modFit,validation)
+
+validation$classe = factor(validation$classe)
+confusionMatrix(validation_predict,validation$classe)
+
+```
+
+As we can see the Accuracy is 0.9999 and Out-of-Sample error rate is 1-0.9999=0.0001
+With this level of accuracy, we can say that our model is modest.
+
+Important Variables:
+```{r}
+varImp(modFit)
+
+```
+
+Use this model to fit the testing cases:
+```{r}
+predict_test_final<-predict(modFit,testing_dat)
+print(predict_test_final)
+```
